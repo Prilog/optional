@@ -1,26 +1,33 @@
 #pragma once
 #include <cstdio>
+#include <utility>
 
 template <typename T>
 struct optional {
 	optional() {};
 	optional(T const& arg)
 	{
-		data = new T(arg);
+		empty = false;
+		new (&data) T(arg);
 	}
 	optional(optional const& arg) 
 	{
-		if (arg.data == nullptr) {
-			data = nullptr;
-			return;
+		empty = arg.empty;
+		if (!empty) {
+			new (&data) T(*arg);
 		}
-		data = new T(*arg.data);
 	}
-	optional& operator= (optional const& arg) 
-	{
+	~optional() {
 		free_data();
-		if (arg.data != nullptr) {
-			data = new T(*arg.data);
+	}
+	optional& operator= (optional const arg) 
+	{
+		if (!empty) {
+			free_data();
+		}
+		if (!arg.empty) {
+			create_data(arg.data);
+			empty = false;
 		}
 		return *this;
 	}
@@ -30,111 +37,132 @@ struct optional {
 	}
 	explicit operator bool() const
 	{
-		return !(data == nullptr);
+		return !empty;
 	}
 
 	T& operator*()
 	{
-		return *data;
+		return *reinterpret_cast<T*> (&data);
 	}
 	T const& operator*() const
 	{
-		return *data;
+		return *reinterpret_cast<const T *>(&data);
 	}
 	T* operator->()
 	{
-		return data;
+		return reinterpret_cast<T*>(&data);
 	}
 	T const* operator->() const
 	{
-		return data;
+		return reinterpret_cast<T const*>(&data);
 	}
 
 	friend bool operator<(optional const& arg2, optional const& arg)
 	{
-		if (arg2.data == nullptr) {
-			return !(arg.data == nullptr);
+		if (arg2.empty) {
+			return !(arg.empty);
 		}
 		else {
-			if (arg.data == nullptr) {
+			if (arg.empty) {
 				return false;
 			}
-			return (*arg2.data) < (*arg.data);
+			return (*arg2) < (*arg);
 		}
 	}
 	friend bool operator<=(optional const& arg2, optional const& arg)
 	{
-		if (arg2.data == nullptr) {
+		if (arg2.empty) {
 			return true;
 		}
 		else {
-			if (arg.data == nullptr) {
+			if (arg.empty) {
 				return false;
 			}
-			return (*arg2.data) <= (*arg.data);
+			return (*arg2) <= (*arg);
 		}
 	}
 	friend bool operator==(optional const& arg2, optional const& arg)
 	{
-		if (arg2.data == nullptr) {
-			return (arg.data == nullptr);
+		if (arg2.empty) {
+			return (arg.empty);
 		}
 		else {
-			if (arg.data == nullptr) {
+			if (arg.empty) {
 				return false;
 			}
-			return (*arg2.data) == (*arg.data);
+			return (*arg2) == (*arg);
 		}
 	}
 	friend bool operator!=(optional const& arg2, optional const& arg)
 	{
-		if (arg2.data == nullptr) {
-			return !(arg.data == nullptr);
+		if (arg2.empty) {
+			return !(arg.empty);
 		}
 		else {
-			if (arg.data == nullptr) {
+			if (arg.empty) {
 				return true;
 			}
-			return (*arg2.data) != (*arg.data);
+			return (*arg2) != (*arg);
 		}
 	}
 	friend bool operator>(optional const& arg2, optional const& arg)
 	{
-		if (arg2.data == nullptr) {
+		if (arg2.empty) {
 			return false;
 		}
 		else {
-			if (arg.data == nullptr) {
+			if (arg.empty) {
 				return true;
 			}
-			return (*arg2.data) > (*arg.data);
+			return (*arg2) > (*arg);
 		}
 	}
 	friend bool operator>=(optional const& arg2, optional const& arg)
 	{
-		if (arg2.data == nullptr) {
-			return (arg.data == nullptr);
+		if (arg2.empty) {
+			return (arg.empty);
 		}
 		else {
-			if (arg.data == nullptr) {
+			if (arg.empty) {
 				return true;
 			}
-			return (*arg2.data) >= (*arg.data);
+			return (*arg2) >= (*arg);
 		}
 	}
 
 	friend void swap(optional& a, optional& b)
 	{
-		std::swap(a.data, b.data);
+		if (a.empty && b.empty) {
+			return;
+		}
+		if (a.empty) {
+			a.create_data(b.data);
+			b.free_data();
+			a.empty = false;
+		}
+		else if (b.empty) {
+			b.create_data(a.data);
+			a.free_data();
+			b.empty = false;
+		}
+		else {
+			std::swap(a.data, b.data);
+		}
 	}
 
 private:
-	T* data = nullptr;
+	typename std::aligned_storage<sizeof(T), alignof(T)>::type data;
+	bool empty = true;
+
+	void create_data(typename std::aligned_storage<sizeof(T), alignof(T)>::type const& arg) {
+		new (&data) T(*reinterpret_cast<T const *>(&arg));
+	}
+
 	void free_data()
 	{
-		if (data != nullptr) {
-			delete data;
-			data = nullptr;
+		if (!empty) {
+			empty = true;
+			reinterpret_cast<T&>(data).~T();
 		}
 	}
 };
