@@ -24,9 +24,20 @@ struct optional {
 		if (this == &arg) {
 			return *this;
 		}
-		if (!arg.empty) {
-			data = arg.data;
-			empty = false;
+		if (!empty) {
+			if (!arg.empty) {
+				data = arg.data;
+				empty = false;
+			}
+			else {
+				free_data();
+			}
+		}
+		else {
+			if (!arg.empty) {
+				data = arg.data;
+				empty = false;
+			}
 		}
 		return *this;
 	}
