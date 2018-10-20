@@ -19,11 +19,9 @@ struct optional {
 	optional& operator= (optional const& arg) 
 	{
 		free_data();
-		if (arg.data == nullptr) {
-			data = nullptr;
-			return *this;
+		if (arg.data != nullptr) {
+			data = new T(*arg.data);
 		}
-		data = new T(*arg.data);
 		return *this;
 	}
 	void clear()
