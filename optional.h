@@ -1,10 +1,9 @@
 #pragma once
-#include <cstdio>
 #include <utility>
 
 template <typename T>
 struct optional {
-	optional() {};
+	optional() {}
 	optional(T const& arg)
 	{
 		empty = false;
@@ -22,14 +21,11 @@ struct optional {
 	}
 	optional& operator= (optional const& arg) 
 	{
-		if (*this == arg) {
+		if (this == &arg) {
 			return *this;
 		}
-		if (!empty) {
-			free_data();
-		}
 		if (!arg.empty) {
-			create_data(arg.data);
+			data = arg.data;
 			empty = false;
 		}
 		return *this;
@@ -149,7 +145,9 @@ struct optional {
 			b.empty = false;
 		}
 		else {
-			std::swap(a.data, b.data);
+			T* x = reinterpret_cast<T*>(&a.data);
+			T* y = reinterpret_cast<T*>(&b.data);
+			std::swap(*x, *y);
 		}
 	}
 
