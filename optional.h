@@ -26,7 +26,7 @@ struct optional {
 		}
 		if (!empty) {
 			if (!arg.empty) {
-				data = arg.data;
+				*reinterpret_cast<T*>(&data) = T(*reinterpret_cast<const T *>(&arg.data));
 				empty = false;
 			}
 			else {
@@ -35,7 +35,7 @@ struct optional {
 		}
 		else {
 			if (!arg.empty) {
-				data = arg.data;
+				*reinterpret_cast<T*>(&data) = T(*reinterpret_cast<const T *>(&arg.data));
 				empty = false;
 			}
 		}
