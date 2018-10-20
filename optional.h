@@ -20,8 +20,11 @@ struct optional {
 	~optional() {
 		free_data();
 	}
-	optional& operator= (optional const arg) 
+	optional& operator= (optional const& arg) 
 	{
+		if (*this == arg) {
+			return *this;
+		}
 		if (!empty) {
 			free_data();
 		}
